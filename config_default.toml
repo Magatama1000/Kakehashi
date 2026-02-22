@@ -1,0 +1,59 @@
+[crawl]
+# クロール間隔（秒）
+crawl_duration = 180
+
+[note]
+# ノート投稿間隔（秒）
+note_duration = 10
+# リツイートをノートする true/false
+retweet = true
+# ノートの公開範囲 public / home / followers
+visibility = "public"
+# 連合しない true/false
+localonly = false
+# @ツイートをMFMリンクに変換する true/false
+mfm_mention = true
+# ツイートURLのプレビューを抑制する（MFM） true/false
+mfm_tweeturl = true
+# URLトラッキングパラメーター削除（url_cleaner ライブラリが必要） true/false
+url_cleaner = false
+
+[media]
+# 動画エンコード: "x265" (再エンコード) / "copy" (そのまま)
+video_encode = "copy"
+# GIFエンコード: "gif" / "x265" / "copy"
+gif_encode = "copy"
+# GIFフレームレート上限（15以下推奨）
+gif_encode_fpsmax = 15
+# 静止画をAVIFに変換する（pillow-avif-plugin 必要） true/false
+pic_encode_avif = true
+
+[nsfw]
+# 全メディアにNSFWを強制 true/false
+nsfw_forced = false
+# 動画・GIFにNSFWを強制 true/false
+nsfw_forced_video = true
+# NSFWを強制するワード（最優先） 例: ["水着", "バニー"]
+nsfw_word_forced = []
+# NSFWを解除する安全ワード
+nsfw_word_safe = []
+# NSFWJSによる静止画AI判定 true/false（未実装: 将来対応）
+nsfwjs = false
+
+[profile]
+# プロフィール画像を同期する true/false
+profile = true
+# ヘッダー画像を同期する true/false
+header = true
+
+[log]
+# ログレベル: DEBUG / INFO / WARNING / ERROR
+level = "WARNING"
+# ログファイルパス（空文字でファイル出力なし）
+file = "x2misskey.log"
+# ログファイル最大サイズ（バイト）デフォルト 10MB
+max_bytes = 10485760
+# ローテーション保持数
+backup_count = 5
+# コンソール出力 true/false
+console = true

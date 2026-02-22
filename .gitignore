@@ -1,0 +1,32 @@
+# 認証・状態ファイル（絶対にコミットしないこと）
+auth.json
+data/
+
+# 設定ファイル(defaultをコピーして使用する)
+config.toml
+
+# ログ
+*.log
+*.log.*
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.egg-info/
+dist/
+build/
+
+# uv / venv
+.venv/
+.uv/
+uv.lock
+
+# エディタ・OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
