@@ -30,3 +30,7 @@ uv.lock
 Thumbs.db
 *.swp
 *.swo
+
+# テスト用
+test*.py
+inspect*.py
