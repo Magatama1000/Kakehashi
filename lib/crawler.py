@@ -35,6 +35,10 @@ logger = logging.getLogger(__name__)
 NOTE_SKIP_AFTER_FAILURES = 3
 
 
+class _PinnedInvalidError(Exception):
+    """固定ツイートが削除済みまたはパース不能で永続的に取得できないことを示す内部例外"""
+
+
 # ------------------------------------------------------------------ #
 # DB 操作
 # ------------------------------------------------------------------ #
@@ -316,25 +320,56 @@ async def crawl_account(
         current_pinned_id = str(pinned_ids[0])
         if current_pinned_id != state.get("pinned", ""):
             logger.info("[%s] 固定ツイートの変更を検出: %s", screen_name, current_pinned_id)
-            pinned_tweet_id = current_pinned_id
-            pinned_updated = True
-            state["pinned"] = current_pinned_id
 
-            # 固定ツイートを一覧に追加
-            try:
-                pinned = await retry_twikit(
-                    twitter_client.get_tweet_by_id,
-                    current_pinned_id,
-                    label=f"get_tweet_by_id(pinned={current_pinned_id})",
+            # 削除済みツイートが pinned_tweet_ids に残り続けるケースがある。
+            # invalid_pinned_ids に記録して以降はスキップする。
+            invalid_pinned = set(state.get("invalid_pinned_ids", []))
+            if current_pinned_id in invalid_pinned:
+                logger.info(
+                    "[%s] 固定ツイート(%s)は以前取得失敗済みのためスキップします",
+                    screen_name, current_pinned_id,
                 )
-                pinned_created = ensure_utc(pinned.created_at_datetime)
-                if pinned_created > last_tweet_time:
-                    already = any(t["tweet"].id == pinned.id for t in gotten_new_tweets)
-                    if not already:
-                        gotten_new_tweets.append({"tweet": pinned, "created_at": pinned_created})
-                        logger.info("[%s] 固定ツイートをリストに追加: %s", screen_name, pinned.id)
-            except Exception:
-                logger.exception("[%s] 固定ツイート取得失敗", screen_name)
+            else:
+                # 取得を試みる（通信エラーはリトライ、パース失敗・削除済みはスキップ）
+                try:
+                    pinned = await retry_twikit(
+                        twitter_client.get_tweet_by_id,
+                        current_pinned_id,
+                        label=f"get_tweet_by_id(pinned={current_pinned_id})",
+                    )
+                    if pinned is None:
+                        # None はパース失敗 or 削除済み → invalid 扱い
+                        raise _PinnedInvalidError("get_tweet_by_id returned None")
+
+                    # 取得成功 → 通常処理
+                    pinned_tweet_id = current_pinned_id
+                    pinned_updated = True
+                    state["pinned"] = current_pinned_id
+
+                    pinned_created = ensure_utc(pinned.created_at_datetime)
+                    if pinned_created > last_tweet_time:
+                        already = any(t["tweet"].id == pinned.id for t in gotten_new_tweets)
+                        if not already:
+                            gotten_new_tweets.append({"tweet": pinned, "created_at": pinned_created})
+                            logger.info("[%s] 固定ツイートをリストに追加: %s", screen_name, pinned.id)
+
+                except _PinnedInvalidError as e:
+                    # パース失敗・削除済み → invalid_pinned_ids に永続記録してスキップ
+                    logger.warning(
+                        "[%s] 固定ツイート(%s)は削除済みまたは取得不能です。以降スキップします: %s",
+                        screen_name, current_pinned_id, e,
+                    )
+                    invalid_pinned.add(current_pinned_id)
+                    state["invalid_pinned_ids"] = list(invalid_pinned)
+                    # state["pinned"] は更新しない（次回も検出されるが invalid でスキップ）
+
+                except Exception as e:
+                    # 通信エラー等の一時的な失敗 → 今回はスキップ、次回リトライ
+                    logger.warning(
+                        "[%s] 固定ツイート(%s)の取得に失敗しました（一時的なエラーの可能性）。次回再試行します: %s",
+                        screen_name, current_pinned_id, e,
+                    )
+                    # state["pinned"] を更新しないことで次回も再試行される
 
     # 古い順に並び替え
     gotten_new_tweets.sort(key=lambda x: x["created_at"])
