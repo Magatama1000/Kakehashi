@@ -201,6 +201,96 @@ def _post_note_with_retry(
 # メイン: 1アカウントペアのクロール
 # ------------------------------------------------------------------ #
 
+def _collect_self_replies(
+    gotten_new_tweets: list[dict],
+    collected_ids: set[str],
+    user_id: str,
+    last_tweet_time: datetime.datetime,
+    screen_name: str,
+    max_depth: int = 20,
+    seed_tweets: list | None = None,
+) -> None:
+    """
+    ツイートの自己リプライを再帰的に収集する。
+
+    seed_tweets が指定された場合はそこから開始する（浮上した旧ツイートのチェック用）。
+    未指定の場合は gotten_new_tweets の全ツイートを走査する。
+
+    検証結果より、自己リプライは replies リストの先頭に来る。
+    先頭から連続する自己リプライを収集し、自己リプライ以外が出たら打ち切り。
+    get_tweet_by_id を使わず replies だけで完結するため API 呼び出しなし。
+    """
+    seeds = seed_tweets if seed_tweets is not None else None
+    i = 0
+    while True:
+        if seeds is not None:
+            if i >= len(seeds):
+                break
+            tweet = seeds[i]
+        else:
+            if i >= len(gotten_new_tweets):
+                break
+            tweet = gotten_new_tweets[i]["tweet"]
+        i += 1
+        _follow_self_replies_sync(
+            tweet, user_id, last_tweet_time, gotten_new_tweets,
+            collected_ids, screen_name, depth=0, max_depth=max_depth,
+        )
+
+
+def _follow_self_replies_sync(
+    tweet,
+    user_id: str,
+    last_tweet_time: datetime.datetime,
+    gotten_new_tweets: list[dict],
+    collected_ids: set[str],
+    screen_name: str,
+    depth: int,
+    max_depth: int,
+) -> None:
+    """
+    tweet.replies の先頭から連続する自己リプライを収集し、再帰的に辿る（同期・内部関数）。
+
+    検証結果より自己リプライは replies の先頭に来る。
+    枝分かれ（複数の自己リプライ）にも対応するため、先頭から順に確認し、
+    自己リプライでない要素が出た時点で打ち切る。
+    API 呼び出しなしで replies だけで完結する。
+    """
+    if depth >= max_depth:
+        return
+
+    replies = getattr(tweet, "replies", None) or []
+    if not replies:
+        return
+
+    for reply in replies:
+        if getattr(getattr(reply, "user", None), "id", None) != user_id:
+            break  # 自己リプライ以外が出たら打ち切り
+
+        if reply.id in collected_ids:
+            # 処理済みでも更に先を辿る
+            _follow_self_replies_sync(
+                reply, user_id, last_tweet_time, gotten_new_tweets,
+                collected_ids, screen_name, depth + 1, max_depth,
+            )
+            continue
+
+        created = ensure_utc(reply.created_at_datetime)
+        if created > last_tweet_time:
+            gotten_new_tweets.append({"tweet": reply, "created_at": created})
+            logger.info(
+                "[%s] 自己リプライ（ツリー続き）を追加: %s (depth=%d)",
+                screen_name, reply.id, depth + 1,
+            )
+        collected_ids.add(reply.id)
+
+        # さらに先の自己リプライを辿る（API呼び出しなし）
+        _follow_self_replies_sync(
+            reply, user_id, last_tweet_time, gotten_new_tweets,
+            collected_ids, screen_name, depth + 1, max_depth,
+        )
+
+
 async def crawl_account(
     account: dict,
     twitter_client: Client,
@@ -275,29 +365,74 @@ async def crawl_account(
         label=f"get_user_tweets({screen_name})",
     )
 
-    while not reach_latest:
+    # 収集済みツイートIDセット（重複防止）
+    collected_ids: set[str] = set()
+
+    # タイムラインで「古いツイートが浮上してきた」もの（処理済みツリー元候補）
+    surfaced_old_tweets: list = []
+
+    # ページング上限（全部旧ツイートでも無限ループしないよう上限を設ける）
+    MAX_PAGES = 20
+    page_count = 0
+
+    while page_count < MAX_PAGES:
+        page_count += 1
         if not new_tweet_page or len(new_tweet_page) == 0:
             logger.debug("[%s] ツイートページが空", screen_name)
             break
 
+        has_new = False
         for tweet in new_tweet_page:
             created = ensure_utc(tweet.created_at_datetime)
             if created > last_tweet_time:
-                gotten_new_tweets.append({"tweet": tweet, "created_at": created})
+                has_new = True
+                if tweet.id not in collected_ids:
+                    gotten_new_tweets.append({"tweet": tweet, "created_at": created})
+                    collected_ids.add(tweet.id)
             else:
-                reach_latest = True
-                break
+                # last_tweet_time 以前のツイートが出現 → ツリー元として浮上した可能性がある。
+                # reach_latest にはしない（新規ツイートがまだ後ろにある可能性）。
+                # ただし浮上した旧ツイートは自己リプライチェック対象として保持する。
+                if tweet.id not in collected_ids and len(surfaced_old_tweets) < 5:
+                    surfaced_old_tweets.append(tweet)
 
-        if not reach_latest:
-            try:
-                await asyncio.sleep(1)
-                new_tweet_page = await retry_twikit(
-                    new_tweet_page.next,
-                    label=f"tweet_page.next({screen_name})",
-                )
-            except Exception:
-                logger.exception("[%s] 次ページ取得失敗", screen_name)
+        # 1ページに新規ツイートが1件もなければ終了
+        if not has_new:
+            logger.debug("[%s] 新規ツイートなし、ページング終了", screen_name)
+            break
+
+        try:
+            await asyncio.sleep(1)
+            new_tweet_page = await retry_twikit(
+                new_tweet_page.next,
+                label=f"tweet_page.next({screen_name})",
+            )
+            if not new_tweet_page:
+                logger.debug("[%s] 次ページが空（None または []）、ページング終了", screen_name)
                 break
+        except Exception:
+            logger.exception("[%s] 次ページ取得失敗", screen_name)
+            break
+
+    # ツリー（自己リプライ）の収集 その1:
+    # タイムラインで取得した新規ツイートの replies を辿る
+    _collect_self_replies(
+        gotten_new_tweets, collected_ids, user_id, last_tweet_time, screen_name,
+    )
+
+    # ツリー（自己リプライ）の収集 その2:
+    # 過去処理済みのツリー元が浮上してきた場合、その replies に新規自己リプライがないか確認
+    # （タイムラインに自己リプライ自体は出てこないが、ツリー元が浮上することで検知できる）
+    for old_tweet in surfaced_old_tweets:
+        if old_tweet.id in collected_ids:
+            continue
+        logger.debug(
+            "[%s] 浮上した旧ツイートの自己リプライを確認: %s", screen_name, old_tweet.id
+        )
+        _collect_self_replies(
+            gotten_new_tweets, collected_ids, user_id, last_tweet_time, screen_name,
+            seed_tweets=[old_tweet],
+        )
 
     # 固定ツイートチェック
     logger.info("[%s] 固定ツイートを確認します", screen_name)
