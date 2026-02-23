@@ -144,4 +144,8 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
+    # Windows では asyncio.create_subprocess_exec に ProactorEventLoop が必要。
+    # SelectorEventLoop（デフォルト）では NotImplementedError になる。
+    if sys.platform == "win32":
+        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy()) # type: ignore
     asyncio.run(main())
