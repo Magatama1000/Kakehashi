@@ -49,7 +49,7 @@ def misskey_auth() -> tuple[str, str]:
 
     session = str(uuid.uuid4())
     params = urlencode({
-        "name": "Kakehashi",
+        "name": "Kakehashi-bot",
         "permission": ",".join(MISSKEY_PERMISSIONS),
     })
     auth_url = f"{misskey_url}/miauth/{session}?{params}"
@@ -207,7 +207,7 @@ async def twitter_auth_menu() -> dict | None:
 
 async def main() -> None:
     print("=" * 50)
-    print("  Kakehashi 認証セットアップ")
+    print("  Kakehashi-bot 認証セットアップ")
     print("=" * 50)
 
     data = load_auth()

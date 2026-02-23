@@ -1,4 +1,4 @@
-# Kakehashi
+# Kakehashi-bot
 
 X (Twitter) の指定アカウントの投稿を Misskey に自動転載するボットです。
 
@@ -109,7 +109,7 @@ uv run python main.py
 3. 各タブを以下のように設定する：
 
 **全般タブ**
-- 名前: `Kakehashi`
+- 名前: `Kakehashi-bot`
 - 「ユーザーがログオンしているかどうかにかかわらず実行する」を選択
 - 「最上位の特権で実行する」にチェック
 
@@ -123,7 +123,7 @@ uv run python main.py
 |------|-----|
 | プログラム/スクリプト | `C:\Users\<ユーザー名>\.local\bin\uv.exe` |
 | 引数の追加 | `run python main.py` |
-| 開始（オプション） | プロジェクトのフルパス（例: `D:\x2m\kakehashi`） |
+| 開始（オプション） | プロジェクトのフルパス（例: `D:\x2m\Kakehashi-bot`） |
 
 **設定タブ**
 - 「タスクを停止するまでの時間」のチェックを外す
@@ -138,10 +138,10 @@ uv run python main.py
 Get-Content x2misskey.log -Wait -Tail 50
 
 # 手動起動
-schtasks /Run /TN "Kakehashi"
+schtasks /Run /TN "Kakehashi-bot"
 
 # 手動停止
-schtasks /End /TN "Kakehashi"
+schtasks /End /TN "Kakehashi-bot"
 ```
 
 ---
@@ -153,21 +153,21 @@ systemd サービスとして登録することでシステム起動時に自動
 #### サービスファイルの作成
 
 ```bash
-sudo nano /etc/systemd/system/kakehashi.service
+sudo nano /etc/systemd/system/Kakehashi-bot.service
 ```
 
 以下を記述（`youruser` とパスは環境に合わせて変更）：
 
 ```ini
 [Unit]
-Description=Kakehashi - X to Misskey crosspost bot
+Description=Kakehashi-bot - X to Misskey crosspost bot
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
 User=youruser
-WorkingDirectory=/home/youruser/kakehashi
+WorkingDirectory=/home/youruser/Kakehashi-bot
 ExecStart=/home/youruser/.local/bin/uv run python main.py
 Restart=on-failure
 RestartSec=30
@@ -183,21 +183,21 @@ WantedBy=multi-user.target
 ```bash
 # サービスを登録・有効化
 sudo systemctl daemon-reload
-sudo systemctl enable kakehashi
-sudo systemctl start kakehashi
+sudo systemctl enable Kakehashi-bot
+sudo systemctl start Kakehashi-bot
 
 # 状態確認
-sudo systemctl status kakehashi
+sudo systemctl status Kakehashi-bot
 
 # ログの確認（リアルタイム）
-sudo journalctl -u kakehashi -f
+sudo journalctl -u Kakehashi-bot -f
 ```
 
 #### 手動での停止・再起動
 
 ```bash
-sudo systemctl stop kakehashi
-sudo systemctl restart kakehashi
+sudo systemctl stop Kakehashi-bot
+sudo systemctl restart Kakehashi-bot
 ```
 
 ---
@@ -205,7 +205,7 @@ sudo systemctl restart kakehashi
 ## ファイル構成
 
 ```
-kakehashi/
+Kakehashi-bot/
 ├── main.py               # エントリーポイント・常駐ループ
 ├── login.py              # 認証セットアップ（対話式）
 ├── config.toml           # 動作設定

@@ -1,5 +1,5 @@
 [project]
-name = "kakehashi"
+name = "Kakehashi-bot"
 version = "0.1.0"
 description = "X (Twitter) to Misskey crosspost bot"
 readme = "README.md"
