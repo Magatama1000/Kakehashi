@@ -77,6 +77,28 @@ def decode_html_entities(text: str) -> str:
     return html.unescape(text)
 
 
+def normalize_hashtags(text: str) -> str:
+    """
+    ハッシュタグの全角シャープ・全角英数字を半角に変換する。
+    Xは全角ハッシュタグ（＃タグ）を受け付けるが、Misskeyは半角(#)のみ対応。
+
+    unicodedata.normalize(NFKC) で全角→半角変換を行う。
+    ひらがな・カタカナ・漢字は NFKC でも変化しないため日本語タグは保持される。
+
+    例: ＃ブルアカ    → #ブルアカ
+        ＃BlueArchive → #BlueArchive
+        #通常タグ     → #通常タグ  （変化なし）
+    """
+    import unicodedata
+
+    def _replace(m: re.Match) -> str:
+        # タグ全体（＃ + 本文）を NFKC 正規化して全角→半角
+        return unicodedata.normalize("NFKC", m.group(0))
+
+    # ＃（U+FF03 全角シャープ）で始まるタグを対象
+    return re.sub(r"＃\S+", _replace, text)
+
+
 def build_tweet_url(screen_name: str, tweet_id: str) -> str:
     return f"https://x.com/{screen_name}/status/{tweet_id}"
 
@@ -101,6 +123,7 @@ def process_tweet_text(
     """ツイートテキストの一連の処理を実行する"""
     tweet_url = build_tweet_url(screen_name, tweet_id)
     text = decode_html_entities(text)
+    text = normalize_hashtags(text)
     text = remove_media_tco(text)
     text = expand_urls_from_entities(text, urls)
     if mfm_mention and not is_rt_text:
@@ -120,6 +143,7 @@ def process_rt_text(
 ) -> str:
     """RT 用テキストの処理"""
     rt_text = decode_html_entities(rt_text)
+    rt_text = normalize_hashtags(rt_text)
     rt_text = remove_media_tco(rt_text)
     rt_text = expand_urls_from_entities(rt_text, rt_urls)
     if mfm_mention:
@@ -135,6 +159,7 @@ def process_quote_text(
 ) -> str:
     """引用ツイート埋め込み用テキストの処理"""
     qt_text = decode_html_entities(qt_text)
+    qt_text = normalize_hashtags(qt_text)
     qt_text = remove_media_tco(qt_text)
     qt_text = expand_urls_from_entities(qt_text, qt_urls)
     if mfm_mention:
