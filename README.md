@@ -1,14 +1,14 @@
 # Kakehashi-bot
 
-X (Twitter) の指定アカウントの投稿を Misskey に自動転載するボットです。
+X(Twitter)の指定アカウントの投稿を Misskey に自動転載するボットです。
 
 ## 特徴
-- [twikit(フォーク版)](https://github.com/cmj/twikit)の採用により、事実上個人利用が困難になったXのAPIキー不要で利用できます。
+- [twikit (フォーク版)](https://github.com/cmj/twikit) の採用により、事実上個人利用が困難になったXのAPIキー不要で利用できます。
 - Misskeyの機能を利用し、Xのポストをなるべく再現します(引用, ツリー, 固定など)。
 - X内の@ポストはXへのMFMリンクに変換します。
 
 ## 注意事項
-- Xの非公式API(Web版のAPI)を利用する[twikit(フォーク版)](https://github.com/cmj/twikit)を採用しています。**自己責任下**でご利用ください。  
+- Xの非公式API(Web版のAPI)を利用する[twikit (フォーク版)](https://github.com/cmj/twikit) を採用しています。**自己責任下**でご利用ください。  
 そのため、メインアカウントの利用はなるべく避けることを強く推奨します。
 
 - OSは、Windows 11, Ubuntu 24.04, Debian 12 以降およびその派生のみ正式サポートしております。  
@@ -19,9 +19,9 @@ Issueは受けますが、対応が困難な可能性があります。
 
 ## 必要環境
 
-- Python 3.11 以上（3.13 / 3.14 推奨）
-- [uv](https://docs.astral.sh/uv/)（パッケージ管理）
-- [FFmpeg](https://ffmpeg.org/)（動画・GIF処理）
+- Python 3.11 以上 (3.13 / 3.14 推奨)
+- [uv](https://docs.astral.sh/uv/) (パッケージ管理)
+- [FFmpeg](https://ffmpeg.org/) (動画・GIF処理)
 
 ---
 
@@ -41,7 +41,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 ### 2. Kakehshi-botのダウンロード
 
-インストールしたいディレクトリでターミナルを開いてください。
+インストールしたいディレクトリ(例: C:\Kakehashi-bot)でターミナルを開いてください。
 ```bash
 # ブラウザでのダウンロードでも可
 git clone https://github.com/Magatama1000/Kakehashi-bot.git
@@ -60,7 +60,7 @@ uv sync
 Pathの通ったFFmpegが必要です。ない場合は以下の手順でインストールしてください。
 
 ```powershell
-# Windows（winget）
+# Windows (winget)
 winget install Gyan.FFmpeg
 ```
 
@@ -68,7 +68,7 @@ winget install Gyan.FFmpeg
 # Ubuntu / Debian
 sudo apt install ffmpeg
 
-# macOS（Homebrew）
+# macOS (Homebrew)
 brew install ffmpeg
 ```
 
@@ -85,7 +85,7 @@ X (Twitter) の認証と Misskey の MiAuth 認証を対話形式で設定しま
 
 login.py 起動時に以下の2つから選択できます。
 
-**方法1: twikit login()（通常）**  
+**方法1: twikit login()(通常)**  
 ユーザー名・パスワードを入力してログインします。  
 
 **方法2: Cookie 手動入力**  
@@ -102,7 +102,7 @@ Xの仕様変更等で `login()` が壊れた際はこちらをご利用くだ�
 ### 6. 設定の編集
 
 `config_default.toml`をコピーして`config.toml`にリネームしてください。  
-`config.toml` を編集します（各項目にコメントあり）。
+`config.toml` を編集します(各項目にコメントあり)。
 
 特にNSFW周りに注意してください。掲載画像に少しでも対象が含まれる場合は、すべてNSFWとして投稿することを推奨します(デフォルト)。
 
@@ -122,7 +122,7 @@ uv run python main.py
 
 #### 設定手順
 
-1. **タスクスケジューラ**を開く（スタートメニューで検索）
+1. **タスクスケジューラ**を開く(スタートメニューで検索)
 2. 右ペインの「**タスクの作成**」をクリック
 3. 各タブを以下のように設定する：
 
@@ -140,15 +140,15 @@ uv run python main.py
 |------|-----|
 | プログラム/スクリプト | `C:\Users\<ユーザー名>\.local\bin\uv.exe` |
 | 引数の追加 | `run python main.py` |
-| 開始（オプション） | プロジェクトのフルパス（例: `C:\Kakehashi-bot`） |
+| 開始(オプション) | インストール先(例: `C:\Kakehashi-bot`) |
 
 **条件タブ**
 - すべてのチェックを外す
 
 **設定タブ**
 - 「タスクを停止するまでの時間」のチェックを外す
-- 「タスクが失敗した場合の再起動の間隔」: 5分（任意）
-- 「再起動試行の最大数」: 10回（任意）
+- 「タスクが失敗した場合の再起動の間隔」: 5分(任意)
+- 「再起動試行の最大数」: 10回(任意)
 
 4. OK → パスワード入力で完了
 
@@ -177,7 +177,7 @@ systemd サービスとして登録することでシステム起動時に自動
 sudo nano /etc/systemd/system/Kakehashi-bot.service
 ```
 
-以下を記述（`youruser` とパスは環境に合わせて変更）：
+以下を記述(`youruser` とパスは環境に合わせて変更)：
 
 ```ini
 [Unit]
@@ -210,7 +210,7 @@ sudo systemctl start Kakehashi-bot
 # 状態確認
 sudo systemctl status Kakehashi-bot
 
-# ログの確認（リアルタイム）
+# ログの確認 (リアルタイム)
 sudo journalctl -u Kakehashi-bot -f
 ```
 
@@ -228,28 +228,28 @@ sudo systemctl restart Kakehashi-bot
 ```
 Kakehashi-bot/
 ├── main.py               # エントリーポイント・常駐ループ
-├── login.py              # 認証セットアップ（対話式）
+├── login.py              # 認証セットアップ(対話式)
 ├── config.toml           # 動作設定
 ├── pyproject.toml        # uv 用パッケージ定義
-├── auth.json             # 認証情報（自動生成・gitignore済み）
+├── auth.json             # 認証情報(自動生成・gitignore済み)
 ├── lib/
 │   ├── crawler.py        # クロール・投稿ロジック
-│   ├── ffmpeg.py         # FFmpeg 非同期ラッパー（進捗ログ付き）
+│   ├── ffmpeg.py         # FFmpeg 非同期ラッパー(進捗ログ付き)
 │   ├── logger_setup.py   # ロギング設定
-│   ├── media.py          # メディア処理（非同期）
+│   ├── media.py          # メディア処理(非同期)
 │   ├── misskey_client.py # Misskey API 独自実装クライアント
 │   ├── retry.py          # リトライユーティリティ
-│   └── text.py           # テキスト処理（URL展開・MFM変換）
+│   └── text.py           # テキスト処理(URL展開・MFM変換)
 └── data/                 # 自動生成・gitignore済み
     ├── state_{name}.json # アカウントごとの処理状態
-    └── id_data.db        # tweet_id ↔ note_id マッピング（SQLite）
+    └── id_data.db        # tweet_id ↔ note_id マッピング(SQLite)
 ```
 
 ## config.toml 主な設定
 
 | セクション | キー | 説明 |
 |-----------|------|------|
-| `[crawl]` | `crawl_duration` | クロール間隔（秒） |
+| `[crawl]` | `crawl_duration` | クロール間隔(秒) |
 | `[note]` | `retweet` | RTを転載するか |
 | `[note]` | `visibility` | 公開範囲 public/home/followers |
 | `[note]` | `mfm_mention` | @メンションをMFMリンクに変換 |
