@@ -8,7 +8,7 @@ note_duration = 10
 # リツイートをノートする true/false
 retweet = true
 # ノートの公開範囲 public / home / followers
-visibility = "public"
+visibility = "home"
 # 連合しない true/false
 localonly = false
 # @ツイートをMFMリンクに変換する true/false
