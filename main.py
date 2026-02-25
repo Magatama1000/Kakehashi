@@ -28,6 +28,7 @@ except ImportError:
 from twikit import Client
 
 from lib.crawler import crawl_account
+from lib.misskey_client import MisskeyClient, MisskeyAPIError
 from lib.logger_setup import setup_logging
 
 AUTH_FILE = "auth.json"
@@ -59,6 +60,23 @@ def load_config() -> dict:
         return {}
     with open(config_path, "rb") as f:
         return tomllib.load(f)
+
+
+def _fetch_misskey_username(acc: dict) -> str:
+    """
+    Misskey の /api/i を叩いて @username を取得する。
+    失敗した場合は "(取得失敗)" を返す。
+    """
+    try:
+        mk = MisskeyClient(acc["misskey_url"], acc["misskey_token"])
+        info = mk.i()
+        return info.get("username", "?")
+    except MisskeyAPIError as e:
+        logger.warning("Misskey ユーザー名の取得失敗 (%s): %s", acc["misskey_url"], e)
+        return "(取得失敗)"
+    except Exception as e:
+        logger.warning("Misskey ユーザー名の取得失敗 (%s): %s", acc["misskey_url"], e)
+        return "(取得失敗)"
 
 
 async def setup_twitter_client(twitter_cookies: dict) -> Client:
@@ -111,8 +129,14 @@ async def main() -> None:
     crawl_duration: int = config.get("crawl", {}).get("crawl_duration", 60)
 
     logger.info("監視アカウント数: %d", len(accounts))
+
+    # Misskey ユーザー名を取得して表示
     for acc in accounts:
-        logger.info("  @%s → %s", acc["twitter_screen_name"], acc["misskey_url"])
+        mk_username = _fetch_misskey_username(acc)
+        logger.info(
+            "  @%s (X) → @%s@%s (Misskey)",
+            acc["twitter_screen_name"], mk_username, acc["misskey_url"],
+        )
     logger.info("クロール間隔: %ds", crawl_duration)
 
     Path("data").mkdir(exist_ok=True)

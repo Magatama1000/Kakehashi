@@ -253,6 +253,10 @@ class MisskeyClient:
     # Account
     # ------------------------------------------------------------------ #
 
+    def i(self) -> dict:
+        """自分のアカウント情報を取得する"""
+        return self._request("i")
+
     def i_update(
         self,
         avatar_id: str | None = None,

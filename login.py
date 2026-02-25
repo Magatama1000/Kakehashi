@@ -83,7 +83,20 @@ def misskey_auth() -> tuple[str, str]:
         raise RuntimeError(f"トークンが空です。レスポンス: {result}")
 
     host = misskey_url.removeprefix("https://").removeprefix("http://")
-    print("✓ Misskey 認証成功\n")
+
+    # 認証したユーザー名を取得して表示
+    try:
+        with httpx.Client(timeout=10.0) as client:
+            resp = client.post(
+                f"https://{host}/api/i",
+                json={"i": token},
+            )
+            resp.raise_for_status()
+            mk_username = resp.json().get("username", "?")
+        print(f"✓ Misskey 認証成功: @{mk_username}@{host}\n")
+    except Exception:
+        print("✓ Misskey 認証成功\n")
+
     return host, token
 
 
