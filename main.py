@@ -1,5 +1,5 @@
 """
-X2Misskey メインエントリーポイント
+Kakehashi-bot メインエントリーポイント
 設定を読み込み、複数アカウントペアを順次クロールして常駐する。
 Python 3.11+ (tomllib 標準搭載) 対応。3.14 向けに from __future__ 注釈を使用。
 """
@@ -112,7 +112,7 @@ async def main() -> None:
     setup_logging(config.get("log", {}))
 
     logger.info("=" * 50)
-    logger.info("  X2Misskey 起動")
+    logger.info("  Kakehashi-bot 起動")
     logger.info("=" * 50)
 
     auth = load_auth()

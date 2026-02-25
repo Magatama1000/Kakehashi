@@ -27,7 +27,7 @@ def setup_logging(config_log: dict | None = None) -> None:
     level_str: str = config_log.get("level", "INFO").upper()
     level = getattr(logging, level_str, logging.INFO)
 
-    log_file: str = config_log.get("file", "x2misskey.log")
+    log_file: str = config_log.get("file", "Kakehashi-bot.log")
     max_bytes: int = config_log.get("max_bytes", 10 * 1024 * 1024)  # 10MB
     backup_count: int = config_log.get("backup_count", 5)
     console_out: bool = config_log.get("console", True)

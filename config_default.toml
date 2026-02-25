@@ -50,7 +50,7 @@ header = true
 # ログレベル: DEBUG / INFO / WARNING / ERROR
 level = "WARNING"
 # ログファイルパス（空文字でファイル出力なし）
-file = "x2misskey.log"
+file = "Kakehashi-bot.log"
 # ログファイル最大サイズ（バイト）デフォルト 10MB
 max_bytes = 10485760
 # ローテーション保持数
