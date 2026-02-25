@@ -30,7 +30,7 @@ pic_encode_avif = true
 
 [nsfw]
 # 全メディアにNSFWを強制 true/false
-nsfw_forced = false
+nsfw_forced = true
 # 動画・GIFにNSFWを強制 true/false
 nsfw_forced_video = true
 # NSFWを強制するワード（最優先） 例: ["水着", "バニー"]
