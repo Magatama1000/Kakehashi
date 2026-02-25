@@ -2,10 +2,17 @@
 
 X (Twitter) の指定アカウントの投稿を Misskey に自動転載するボットです。
 
+## 特徴
+- [twikit(フォーク版)](https://github.com/cmj/twikit)の採用により、事実上個人利用が困難になったXのAPIキー不要で利用できます。
+- Misskeyの機能を利用し、Xのポストをなるべく再現します(引用, ツリー, 固定など)。
+- X内の@ポストはXへのMFMリンクに変換します。
+
 ## 注意事項
-- Xの非公式API(Web版のAPI)を利用するtwikitを採用しています。**自己責任下**でご利用ください。  
+- Xの非公式API(Web版のAPI)を利用する[twikit(フォーク版)](https://github.com/cmj/twikit)を採用しています。**自己責任下**でご利用ください。  
 そのため、メインアカウントの利用はなるべく避けることを強く推奨します。
 
+- OSは、Windows 11, Ubuntu 24.04, Debian 12 以降およびその派生のみ正式サポートしております。  
+Issueは受けますが、対応が困難な可能性があります。 
 - ご利用になるMisskeyインスタンスの規約に沿い、過剰投稿を避け、アカウントをbot指定してください。NSFWに注意してください。
 - ノート投稿が連続3回失敗したツイートはスキップされます。
 - クロール間隔は120~300秒以上を推奨します。
@@ -18,7 +25,7 @@ X (Twitter) の指定アカウントの投稿を Misskey に自動転載する�
 
 ---
 
-## セットアップ
+## 標準的なセットアップ方法
 
 ### 1. uv のインストール
 
@@ -28,17 +35,29 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 ```
 
 ```bash
-# macOS / Linux
+# Linux / macOS
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-### 2. 依存パッケージのインストール
+### 2. Kakehshi-botのダウンロード
+
+インストールしたいディレクトリでターミナルを開いてください。
+```bash
+# ブラウザでのダウンロードでも可
+git clone https://github.com/Magatama1000/Kakehashi-bot.git
+
+cd Kakehashi-bot
+```
+
+### 3. 依存パッケージのインストール
 
 ```bash
 uv sync
 ```
 
-### 3. FFmpeg のインストール
+### 4. FFmpeg のインストール
+
+Pathの通ったFFmpegが必要です。ない場合は以下の手順でインストールしてください。
 
 ```powershell
 # Windows（winget）
@@ -46,21 +65,21 @@ winget install Gyan.FFmpeg
 ```
 
 ```bash
-# macOS（Homebrew）
-brew install ffmpeg
-
 # Ubuntu / Debian
 sudo apt install ffmpeg
+
+# macOS（Homebrew）
+brew install ffmpeg
 ```
 
-### 4. 認証情報の設定
+### 5. 認証情報の設定
 
 ```bash
 uv run python login.py
 ```
 
 X (Twitter) の認証と Misskey の MiAuth 認証を対話形式で設定します。  
-`auth.json` が生成されます（`.gitignore` 済み。**絶対にコミットしないこと**）。
+`auth.json` が生成されます(認証情報が含まれているのでお取扱いに注意してください)。
 
 #### X (Twitter) の認証方法について
 
@@ -68,7 +87,6 @@ login.py 起動時に以下の2つから選択できます。
 
 **方法1: twikit login()（推奨）**  
 ユーザー名・パスワードを入力してログインします。  
-現在使用しているフォーク版 twikit では動作確認済みです。
 
 **方法2: Cookie 手動入力（フォールバック）**  
 twikit のアップデートで `login()` が壊れた際のフォールバックです。  
@@ -81,14 +99,14 @@ twikit のアップデートで `login()` が壊れた際のフォールバッ�
 
 > `login()` に失敗した場合、自動的に方法2への切り替えを提案します。
 
-### 5. 設定の編集
+### 6. 設定の編集
 
 `config_default.toml`をコピーして`config.toml`にリネームしてください。  
 `config.toml` を編集します（各項目にコメントあり）。
 
-特にNSFW周りに注意してください。掲載画像に少しでも含まれる場合は、すべてNSFWとして投稿することを推奨します。
+特にNSFW周りに注意してください。掲載画像に少しでも対象が含まれる場合は、すべてNSFWとして投稿することを推奨します(デフォルト)。
 
-### 6. 起動テスト
+### 7. 起動テスト
 
 ```bash
 uv run python main.py
@@ -109,12 +127,11 @@ uv run python main.py
 3. 各タブを以下のように設定する：
 
 **全般タブ**
-- 名前: `Kakehashi-bot`
+- 名前: 任意(例: `Kakehashi-bot`)
 - 「ユーザーがログオンしているかどうかにかかわらず実行する」を選択
-- 「最上位の特権で実行する」にチェック
 
 **トリガータブ**  
-「新規」→「タスクの開始: コンピューターの起動時」
+「新規」→「タスクの開始: スタートアップ時」
 
 **操作タブ**  
 「新規」→ 以下を入力：
@@ -123,11 +140,15 @@ uv run python main.py
 |------|-----|
 | プログラム/スクリプト | `C:\Users\<ユーザー名>\.local\bin\uv.exe` |
 | 引数の追加 | `run python main.py` |
-| 開始（オプション） | プロジェクトのフルパス（例: `D:\x2m\Kakehashi-bot`） |
+| 開始（オプション） | プロジェクトのフルパス（例: `C:\Kakehashi-bot`） |
+
+**条件タブ**
+- すべてのチェックを外す
 
 **設定タブ**
 - 「タスクを停止するまでの時間」のチェックを外す
-- 「タスクが失敗した場合の再起動の間隔」: 1分（任意）
+- 「タスクが失敗した場合の再起動の間隔」: 5分（任意）
+- 「再起動試行の最大数」: 10回（任意）
 
 4. OK → パスワード入力で完了
 
@@ -135,13 +156,13 @@ uv run python main.py
 
 ```powershell
 # ログをリアルタイムで確認
-Get-Content x2misskey.log -Wait -Tail 50
+Get-Content kakehashi-bot.log -Wait -Tail 50
 
 # 手動起動
-schtasks /Run /TN "Kakehashi-bot"
+schtasks /Run /TN "Kakehashi-bot" #設定名
 
 # 手動停止
-schtasks /End /TN "Kakehashi-bot"
+schtasks /End /TN "Kakehashi-bot" #設定名
 ```
 
 ---
