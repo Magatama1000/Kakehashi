@@ -254,7 +254,7 @@ class MisskeyClient:
     # ------------------------------------------------------------------ #
 
     def i(self) -> dict:
-        """自分のアカウント情報を取得する"""
+        """自分のアカウント情報を取得する（read:account 権限が必要）"""
         return self._request("i")
 
     def i_update(

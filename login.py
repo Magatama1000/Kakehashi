@@ -25,6 +25,7 @@ from twikit import Client
 AUTH_FILE = "auth.json"
 
 MISSKEY_PERMISSIONS = [
+    "read:account",
     "write:notes",
     "write:drive",
     "write:account",
