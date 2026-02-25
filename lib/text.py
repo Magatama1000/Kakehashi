@@ -57,19 +57,44 @@ def remove_quote_url(text: str, quote_tweet_id: str) -> str:
 
 
 def replace_mentions(text: str) -> str:
-    """@mention を MFM リンク形式に変換する"""
-    # Fediverse メンション @user@host を先に plain 化
+    """
+    @mention を MFM リンク形式に変換する。
+
+    処理順:
+      1. Fediverse メンション @user@host を <plain> で保護
+      2. 変換済み MFM リンク ?[@xxx](...) 内の @ を一時エスケープ（二重変換防止）
+      3. 通常 @mention → ?[@xxx](https://x.com/xxx) に変換
+      4. エスケープを元に戻す
+    """
+    # Step1: Fediverse メンション @user@host を先に plain 化
     text = re.sub(
-        r"(?<![a-zA-Z0-9_\[\(])@([a-zA-Z0-9_]+)@([a-zA-Z0-9._-]+\.[a-zA-Z]{2,})",
+        r"(?<![a-zA-Z0-9_])@([a-zA-Z0-9_]+)@([a-zA-Z0-9._-]+\.[a-zA-Z]{2,})",
         lambda m: f"<plain>{m.group(0)}</plain>",
         text,
     )
-    # 通常 @mention → MFM リンク
+    # Step2: 変換済み MFM リンク内の @xxx を一時エスケープ（二重変換防止）
+    placeholders: dict[str, str] = {}
+
+    def _escape_mfm(m: re.Match) -> str:
+        key = f"MFM{len(placeholders)}"
+        placeholders[key] = m.group(0)
+        return key
+
+    text = re.sub(r"\?\[(@[a-zA-Z0-9_]+)\]\(https?://[^\)]+\)", _escape_mfm, text)
+
+    # Step3: 通常 @mention → MFM リンク
+    # 後読み: 英数字・_・@ の直後でなければ変換（文頭・括弧・記号等はOK）
+    # 先読み: 英数字・_・@ が続かなければ変換
     text = re.sub(
-        r"(?<![a-zA-Z0-9_@\[\(])@([a-zA-Z0-9_]{1,50})(?![a-zA-Z0-9_@\]\)])",
-        lambda m: f'?[@{m.group(1)}](https://x.com/{m.group(1)})',
+        r"(?<![a-zA-Z0-9_@])\B@([a-zA-Z0-9_]{1,50})(?![a-zA-Z0-9_@])",
+        lambda m: f"?[@{m.group(1)}](https://x.com/{m.group(1)})",
         text,
     )
+
+    # Step4: プレースホルダーを元に戻す
+    for key, val in placeholders.items():
+        text = text.replace(key, val)
+
     return text
 
 
