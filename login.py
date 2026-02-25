@@ -136,7 +136,6 @@ async def twitter_auth_login() -> dict:
 async def twitter_auth_cookie() -> dict:
     """
     ブラウザの開発者ツールから Cookie を手動入力して認証情報を返す。
-    twikit の login() が動作しないときのフォールバック。
 
     取得手順:
       1. ブラウザで https://x.com にログイン
@@ -149,7 +148,7 @@ async def twitter_auth_cookie() -> dict:
     print("ブラウザの開発者ツールから Cookie を取得して入力してください。")
     print()
     print("取得手順:")
-    print("  1. ブラウザで https://x.com にログイン")
+    print("  1. ブラウザで https://x.com にログインまたは新規登録")
     print("  2. 開発者ツール (F12) → [Application] → [Cookies] → [https://x.com]")
     print("  3. auth_token（約40文字）と ct0（約160文字）をコピー")
     print()
@@ -195,11 +194,13 @@ def save_auth(data: dict) -> None:
 async def twitter_auth_menu() -> dict | None:
     """X 認証方法の選択メニュー"""
     print("\nX (Twitter) の認証方法を選択してください:")
-    print("  1. twikit login()  （推奨: フォーク版で動作確認済み）")
-    print("  2. Cookie 手動入力 （login() が動作しない場合のフォールバック）")
+    print("  1. Cookie 手動入力 （推奨）")
+    print("  2. twikit login()  （非推奨）")
     choice = input("選択 (1/2): ").strip()
 
     if choice == "1":
+        return await twitter_auth_cookie()
+    if choice == "2":
         try:
             return await twitter_auth_login()
         except Exception as e:
@@ -208,8 +209,6 @@ async def twitter_auth_menu() -> dict | None:
             if retry == "y":
                 return await twitter_auth_cookie()
             return None
-    elif choice == "2":
-        return await twitter_auth_cookie()
     else:
         print("1 か 2 を入力してください")
         return None
