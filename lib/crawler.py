@@ -295,6 +295,7 @@ async def crawl_account(
     account: dict,
     twitter_client: Client,
     config: dict,
+    url_cleaner=None,
 ) -> None:
     screen_name: str = account["twitter_screen_name"]
     misskey_url: str = account["misskey_url"]
@@ -311,7 +312,6 @@ async def crawl_account(
     localonly: bool = config_note.get("localonly", False)
     mfm_mention: bool = config_note.get("mfm_mention", True)
     mfm_tweeturl: bool = config_note.get("mfm_tweeturl", True)
-    url_cleaner: bool = config_note.get("url_cleaner", False)
 
     logger.info("=== [%s] クロール開始 ===", screen_name)
 
@@ -550,6 +550,7 @@ async def crawl_account(
                     localonly=localonly,
                     mfm_mention=mfm_mention,
                     mfm_tweeturl=mfm_tweeturl,
+                    url_cleaner=url_cleaner,
                 )
             except Exception:
                 logger.exception(
@@ -604,6 +605,7 @@ async def _process_single_tweet(
     localonly: bool,
     mfm_mention: bool,
     mfm_tweeturl: bool,
+    url_cleaner=None,
 ) -> None:
     """1ツイートを処理してMisskeyにノートする"""
 
@@ -646,6 +648,7 @@ async def _process_single_tweet(
                 rt_text=retweeted.text or "",
                 rt_urls=rt_urls,
                 mfm_mention=mfm_mention,
+                url_cleaner=url_cleaner,
             )
             file_ids, tweet_text = await download_media(
                 media=getattr(retweeted, "media", None),
@@ -723,6 +726,7 @@ async def _process_single_tweet(
                         qt_text=qt_text_processed,
                         qt_urls=qt_urls,
                         mfm_mention=mfm_mention,
+                        url_cleaner=url_cleaner,
                     )
                     tweet_text = f"{tweet_text}\n\n{qt_suffix}"
 
@@ -742,6 +746,7 @@ async def _process_single_tweet(
             urls=urls,
             mfm_mention=mfm_mention,
             mfm_tweeturl=mfm_tweeturl,
+            url_cleaner=url_cleaner,
         )
 
     # ---- Misskey にノート投稿 ----

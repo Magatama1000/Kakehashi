@@ -15,9 +15,10 @@ import re
 logger = logging.getLogger(__name__)
 
 
-def expand_urls_from_entities(text: str, urls: list | None) -> str:
+def expand_urls_from_entities(text: str, urls: list | None, url_cleaner=None) -> str:
     """
     twikit の Tweet.urls から展開済みURLを使って t.co を置換する。
+    url_cleaner が指定された場合、展開後のURLにトラッキングパラメーター削除を適用する。
     X API から取れない t.co が残った場合はそのまま残す。
     """
     if not urls:
@@ -32,6 +33,14 @@ def expand_urls_from_entities(text: str, urls: list | None) -> str:
             expanded = getattr(entity, "expanded_url", "")
 
         if short and expanded and short in text:
+            if url_cleaner is not None:
+                try:
+                    cleaned = url_cleaner.clean(expanded)
+                    if cleaned != expanded:
+                        logger.debug("url-cleaner: %s → %s", expanded, cleaned)
+                    expanded = cleaned
+                except Exception as e:
+                    logger.debug("url-cleaner 失敗 (%s): %s", expanded, e)
             text = text.replace(short, expanded)
             logger.debug("URL展開: %s → %s", short, expanded)
 
@@ -142,7 +151,7 @@ def process_tweet_text(
     urls: list | None = None,
     mfm_mention: bool = True,
     mfm_tweeturl: bool = True,
-    url_cleaner: bool = False,
+    url_cleaner=None,
     is_rt_text: bool = False,
 ) -> str:
     """ツイートテキストの一連の処理を実行する"""
@@ -150,7 +159,7 @@ def process_tweet_text(
     text = decode_html_entities(text)
     text = normalize_hashtags(text)
     text = remove_media_tco(text)
-    text = expand_urls_from_entities(text, urls)
+    text = expand_urls_from_entities(text, urls, url_cleaner=url_cleaner)
     if mfm_mention and not is_rt_text:
         text = replace_mentions(text)
     if mfm_tweeturl:
@@ -165,12 +174,13 @@ def process_rt_text(
     rt_text: str,
     rt_urls: list | None = None,
     mfm_mention: bool = True,
+    url_cleaner=None,
 ) -> str:
     """RT 用テキストの処理"""
     rt_text = decode_html_entities(rt_text)
     rt_text = normalize_hashtags(rt_text)
     rt_text = remove_media_tco(rt_text)
-    rt_text = expand_urls_from_entities(rt_text, rt_urls)
+    rt_text = expand_urls_from_entities(rt_text, rt_urls, url_cleaner=url_cleaner)
     if mfm_mention:
         rt_text = replace_mentions(rt_text)
     return f"RT ?[@{rt_screen_name}](https://x.com/{rt_screen_name}): {rt_text}"
@@ -181,12 +191,13 @@ def process_quote_text(
     qt_text: str,
     qt_urls: list | None = None,
     mfm_mention: bool = True,
+    url_cleaner=None,
 ) -> str:
     """引用ツイート埋め込み用テキストの処理"""
     qt_text = decode_html_entities(qt_text)
     qt_text = normalize_hashtags(qt_text)
     qt_text = remove_media_tco(qt_text)
-    qt_text = expand_urls_from_entities(qt_text, qt_urls)
+    qt_text = expand_urls_from_entities(qt_text, qt_urls, url_cleaner=url_cleaner)
     if mfm_mention:
         qt_text = replace_mentions(qt_text)
     return f"QT ?[@{qt_screen_name}](https://x.com/{qt_screen_name}): {qt_text}"

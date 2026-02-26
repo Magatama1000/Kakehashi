@@ -30,6 +30,7 @@ from twikit import Client
 from lib.crawler import crawl_account
 from lib.misskey_client import MisskeyClient, MisskeyAPIError
 from lib.logger_setup import setup_logging
+from lib.url_cleaner_helper import make_url_cleaner, update_url_cleaner_rules
 
 AUTH_FILE = "auth.json"
 CONFIG_FILE = "config.toml"
@@ -85,12 +86,12 @@ async def setup_twitter_client(twitter_cookies: dict) -> Client:
     return client
 
 
-async def run_once(accounts: list, twitter_client: Client, config: dict) -> None:
+async def run_once(accounts: list, twitter_client: Client, config: dict, url_cleaner=None) -> None:
     for account in accounts:
         if stop_loop:
             break
         try:
-            await crawl_account(account, twitter_client, config)
+            await crawl_account(account, twitter_client, config, url_cleaner=url_cleaner)
         except Exception:
             logger.exception(
                 "@%s のクロール中に予期せぬ例外が発生しました",
@@ -145,6 +146,14 @@ async def main() -> None:
     twitter_client = await setup_twitter_client(auth["twitter"])
     logger.info("X (Twitter) クライアント初期化完了")
 
+    # url_cleaner の初期化
+    url_cleaner_enabled: bool = config.get("note", {}).get("url_cleaner", False)
+    url_cleaner = make_url_cleaner(url_cleaner_enabled)
+    if url_cleaner:
+        logger.info("url-cleaner: 有効（初回ルール更新済み）")
+    else:
+        logger.info("url-cleaner: 無効")
+
     # メインループ
     while not stop_loop:
         import datetime
@@ -152,7 +161,10 @@ async def main() -> None:
         now = datetime.datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d %H:%M:%S JST")
         logger.info("\n%s\nクロール開始: %s\n%s", "=" * 50, now, "=" * 50)
 
-        await run_once(accounts, twitter_client, config)
+        # 周回ごとにurl-cleanerのルールを更新
+        update_url_cleaner_rules(url_cleaner)
+
+        await run_once(accounts, twitter_client, config, url_cleaner=url_cleaner)
 
         if stop_loop:
             break

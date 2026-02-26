@@ -1,6 +1,6 @@
 [project]
 name = "Kakehashi-bot"
-version = "0.1.1"
+version = "0.1.2"
 description = "X (Twitter) to Misskey crosspost bot"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -10,13 +10,10 @@ dependencies = [
     "httpx>=0.28.1",
     "pillow>=11.2.1",
     "pillow-avif-plugin>=1.4.6",
+    "url-cleaner>=0.1.5",
+    "requests>=2.32.0",
 ]
 
-[project.optional-dependencies]
-# config.toml の url_cleaner = true 時に必要
-url-cleaner = [
-    "url-cleaner>=0.1.5",
-]
 
 [tool.uv]
 python-preference = "only-managed"

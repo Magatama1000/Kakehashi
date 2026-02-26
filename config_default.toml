@@ -15,7 +15,7 @@ localonly = false
 mfm_mention = true
 # ツイートURLのプレビューを抑制する（MFM） true/false
 mfm_tweeturl = true
-# URLトラッキングパラメーター削除（url_cleaner ライブラリが必要） true/false
+# URLトラッキングパラメーター削除 true/false
 url_cleaner = false
 
 [media]
