@@ -25,9 +25,10 @@ def _get_twikit_retryable() -> tuple:
             from twikit.errors import (
                 TwitterException,
                 TooManyRequests,
-                ConnectionError as TwikitConnectionError,
+                RequestTimeout,
+                ServerError,
             )
-            _TWIKIT_RETRYABLE = (TwitterException, TooManyRequests, TwikitConnectionError)
+            _TWIKIT_RETRYABLE = (TwitterException, TooManyRequests, RequestTimeout, ServerError)
         except ImportError:
             _TWIKIT_RETRYABLE = (Exception,)
     return _TWIKIT_RETRYABLE
